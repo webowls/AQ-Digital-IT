@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule ^(style\.css|favicon\.ico|robots\.txt)$ public/$1 [L,NC]
+    RewriteRule ^(assets|uploads)/(.*)$ public/$1/$2 [L,NC]
+
+    RewriteRule ^index\.php$ - [L]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^ index.php [L]
+</IfModule>
