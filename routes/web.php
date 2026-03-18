@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Admin\HeroSlideController;
+use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\UserController;
@@ -26,6 +28,8 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('services', ServiceController::class)->except(['show']);
+        Route::resource('portfolios', PortfolioController::class)->except(['show', 'create']);
+        Route::resource('hero-slides', HeroSlideController::class)->except(['show', 'create']);
         Route::resource('blogs', AdminBlogController::class)->except(['show']);
         Route::resource('users', UserController::class)->except(['show', 'create']);
 

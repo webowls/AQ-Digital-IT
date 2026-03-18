@@ -4,6 +4,21 @@
 </div>
 
 <div class="mb-3">
+  <label class="form-label">Service Icon (Bootstrap Icons class)</label>
+  <input type="text" name="icon_class" class="form-control" value="{{ old('icon_class', $service->icon_class ?? 'bi bi-stars') }}" list="serviceIconSuggestions" placeholder="bi bi-code-slash">
+  <datalist id="serviceIconSuggestions">
+    <option value="bi bi-code-slash"></option>
+    <option value="bi bi-phone"></option>
+    <option value="bi bi-palette"></option>
+    <option value="bi bi-brush"></option>
+    <option value="bi bi-cloud"></option>
+    <option value="bi bi-megaphone"></option>
+    <option value="bi bi-stars"></option>
+  </datalist>
+  <small class="text-muted">Use any Bootstrap Icons class, e.g. <code>bi bi-code-slash</code>.</small>
+</div>
+
+<div class="mb-3">
   <label class="form-label">Featured Image</label>
   <input type="file" name="featured_image" class="form-control" accept="image/*">
   @if(!empty($service?->featured_image))

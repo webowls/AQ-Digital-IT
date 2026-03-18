@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Blog;
 use App\Models\Setting;
+use Illuminate\Support\Facades\File;
 use App\Models\SmtpSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -29,6 +31,8 @@ class SettingsController extends Controller
       'seo_home_title',
       'seo_home_description',
       'seo_home_keywords',
+      'app_logo',
+      'app_favicon',
     ])->pluck('value', 'key');
 
     return view('admin.settings.general', compact('settings'));
@@ -37,20 +41,43 @@ class SettingsController extends Controller
   public function saveGeneral(Request $request): RedirectResponse
   {
     $data = $request->validate([
-      'app_name' => ['required', 'string', 'max:255'],
-      'app_description' => ['nullable', 'string'],
-      'contact_phone' => ['nullable', 'string', 'max:255'],
-      'contact_email' => ['nullable', 'email', 'max:255'],
-      'contact_address' => ['nullable', 'string'],
-      'landing_heading' => ['nullable', 'string', 'max:255'],
-      'landing_subheading' => ['nullable', 'string'],
-      'seo_home_title' => ['nullable', 'string', 'max:255'],
+      'app_name'            => ['required', 'string', 'max:255'],
+      'app_description'     => ['nullable', 'string'],
+      'contact_phone'       => ['nullable', 'string', 'max:255'],
+      'contact_email'       => ['nullable', 'email', 'max:255'],
+      'contact_address'     => ['nullable', 'string'],
+      'landing_heading'     => ['nullable', 'string', 'max:255'],
+      'landing_subheading'  => ['nullable', 'string'],
+      'seo_home_title'      => ['nullable', 'string', 'max:255'],
       'seo_home_description' => ['nullable', 'string', 'max:160'],
-      'seo_home_keywords' => ['nullable', 'string', 'max:255'],
+      'seo_home_keywords'   => ['nullable', 'string', 'max:255'],
+      'app_logo'            => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
+      'app_favicon'         => ['nullable', 'file', 'mimes:ico,png,svg,jpg,jpeg', 'max:512'],
     ]);
 
-    foreach ($data as $key => $value) {
-      Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+    // Save text settings
+    $textKeys = array_diff(array_keys($data), ['app_logo', 'app_favicon']);
+    foreach ($textKeys as $key) {
+      Setting::updateOrCreate(['key' => $key], ['value' => $data[$key]]);
+    }
+
+    $brandingDir = public_path('uploads/branding');
+    File::ensureDirectoryExists($brandingDir);
+
+    // Handle logo upload
+    if ($request->hasFile('app_logo')) {
+      $logo = $request->file('app_logo');
+      $ext  = $logo->getClientOriginalExtension();
+      $logo->move($brandingDir, 'logo.' . $ext);
+      Setting::updateOrCreate(['key' => 'app_logo'], ['value' => 'uploads/branding/logo.' . $ext]);
+    }
+
+    // Handle favicon upload
+    if ($request->hasFile('app_favicon')) {
+      $fav = $request->file('app_favicon');
+      $ext = $fav->getClientOriginalExtension();
+      $fav->move($brandingDir, 'favicon.' . $ext);
+      Setting::updateOrCreate(['key' => 'app_favicon'], ['value' => 'uploads/branding/favicon.' . $ext]);
     }
 
     return back()->with('success', 'General settings updated successfully.');
@@ -237,6 +264,41 @@ class SettingsController extends Controller
     ])->pluck('value', 'key');
 
     $checks = [];
+    $parameters = [];
+
+    $appUrl = rtrim((string) config('app.url'), '/');
+    $homeUrl = $appUrl !== '' ? $appUrl . '/' : url('/');
+    $sitemapUrl = $appUrl !== '' ? $appUrl . '/sitemap.xml' : url('/sitemap.xml');
+
+    $homeStatusCode = null;
+    $homeHtml = null;
+
+    try {
+      $homeResponse = Http::timeout(10)->get($homeUrl);
+      $homeStatusCode = $homeResponse->status();
+      if ($homeResponse->successful()) {
+        $homeHtml = $homeResponse->body();
+      }
+    } catch (\Throwable $e) {
+      $homeStatusCode = null;
+      $homeHtml = null;
+    }
+
+    $extractFirst = function (string $pattern) use ($homeHtml): ?string {
+      if (! $homeHtml) {
+        return null;
+      }
+
+      if (preg_match($pattern, $homeHtml, $matches) === 1) {
+        return trim(html_entity_decode($matches[1], ENT_QUOTES));
+      }
+
+      return null;
+    };
+
+    $hasPattern = function (string $pattern) use ($homeHtml): bool {
+      return $homeHtml ? preg_match($pattern, $homeHtml) === 1 : false;
+    };
 
     $checks[] = $this->check('APP_URL configured', !empty(env('APP_URL')), !empty(env('APP_URL')) ? 'APP_URL is configured.' : 'APP_URL is missing from environment.', 'fail');
     $checks[] = $this->check('APP_DEBUG disabled', env('APP_DEBUG') === false || env('APP_DEBUG') === 'false', 'APP_DEBUG is disabled.', 'Disable APP_DEBUG in production.', 'warn');
@@ -244,6 +306,36 @@ class SettingsController extends Controller
     $checks[] = $this->check('Home meta description', !empty($settings['seo_home_description']), 'Home meta description is configured.', 'Set SEO Home Description (max 160 chars).', 'warn');
     $checks[] = $this->check('Sitemap route', true, 'Sitemap available at /sitemap.xml.', 'Sitemap route unavailable.', 'fail');
     $checks[] = $this->check('Robots.txt present', file_exists(public_path('robots.txt')), 'robots.txt file exists.', 'Create and configure robots.txt.', 'warn');
+
+    $canonical = $extractFirst('/<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)["\']/i');
+    $robotsMeta = $extractFirst('/<meta[^>]+name=["\']robots["\'][^>]+content=["\']([^"\']+)["\']/i');
+    $metaDescription = $extractFirst('/<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']/i');
+    $ogTitle = $extractFirst('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']/i');
+    $ogDescription = $extractFirst('/<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\']/i');
+    $twitterCard = $extractFirst('/<meta[^>]+name=["\']twitter:card["\'][^>]+content=["\']([^"\']+)["\']/i');
+    $faviconHref = $extractFirst('/<link[^>]+rel=["\']icon["\'][^>]+href=["\']([^"\']+)["\']/i');
+    $schemaJsonLd = $hasPattern('/<script[^>]+type=["\']application\/ld\+json["\']/i');
+    $h1Count = $homeHtml ? preg_match_all('/<h1\b[^>]*>/i', $homeHtml) : 0;
+
+    $sitemapStatusCode = null;
+    try {
+      $sitemapResponse = Http::timeout(10)->get($sitemapUrl);
+      $sitemapStatusCode = $sitemapResponse->status();
+    } catch (\Throwable $e) {
+      $sitemapStatusCode = null;
+    }
+
+    $parameters[] = $this->parameter('Home URL Reachable', $homeUrl, $homeStatusCode === 200 ? 'pass' : 'fail', $homeStatusCode ? 'HTTP ' . $homeStatusCode : 'Request failed');
+    $parameters[] = $this->parameter('Canonical URL', $canonical ?: 'Not found', $canonical ? 'pass' : 'warn', $canonical ? 'Canonical tag detected' : 'Add canonical link tag on homepage');
+    $parameters[] = $this->parameter('Robots Meta', $robotsMeta ?: 'Not found', $robotsMeta ? 'pass' : 'warn', $robotsMeta ? 'Robots meta present' : 'Add robots meta tag (e.g. index, follow)');
+    $parameters[] = $this->parameter('Meta Description', $metaDescription ?: 'Not found', $metaDescription ? 'pass' : 'warn', $metaDescription ? 'Meta description detected' : 'Add meta description');
+    $parameters[] = $this->parameter('OpenGraph Title', $ogTitle ?: 'Not found', $ogTitle ? 'pass' : 'warn', $ogTitle ? 'og:title present' : 'Add og:title tag');
+    $parameters[] = $this->parameter('OpenGraph Description', $ogDescription ?: 'Not found', $ogDescription ? 'pass' : 'warn', $ogDescription ? 'og:description present' : 'Add og:description tag');
+    $parameters[] = $this->parameter('Twitter Card', $twitterCard ?: 'Not found', $twitterCard ? 'pass' : 'warn', $twitterCard ? 'twitter:card present' : 'Add twitter:card meta');
+    $parameters[] = $this->parameter('Favicon Link', $faviconHref ?: 'Not found', $faviconHref ? 'pass' : 'warn', $faviconHref ? 'Favicon link detected' : 'Add favicon link tag');
+    $parameters[] = $this->parameter('Structured Data (JSON-LD)', $schemaJsonLd ? 'Present' : 'Not found', $schemaJsonLd ? 'pass' : 'warn', $schemaJsonLd ? 'JSON-LD detected' : 'Add JSON-LD structured data');
+    $parameters[] = $this->parameter('H1 Tags Count', (string) $h1Count, $h1Count === 1 ? 'pass' : 'warn', $h1Count === 1 ? 'Exactly one H1 found' : 'Recommended exactly one H1 on homepage');
+    $parameters[] = $this->parameter('Sitemap Endpoint', $sitemapUrl, $sitemapStatusCode === 200 ? 'pass' : 'fail', $sitemapStatusCode ? 'HTTP ' . $sitemapStatusCode : 'Request failed');
 
     $publishedBlogs = Blog::where('is_published', true)->count();
     $blogsMissingMeta = Blog::where('is_published', true)
@@ -273,7 +365,7 @@ class SettingsController extends Controller
 
     $score = max($score, 0);
 
-    return view('admin.settings.seo-health', compact('checks', 'score'));
+    return view('admin.settings.seo-health', compact('checks', 'score', 'parameters'));
   }
 
   private function check(string $label, bool $condition, string $passMessage, string $failMessage, string $severity = 'fail'): array
@@ -290,6 +382,16 @@ class SettingsController extends Controller
       'label' => $label,
       'status' => $severity,
       'message' => $failMessage,
+    ];
+  }
+
+  private function parameter(string $label, string $value, string $status, string $note): array
+  {
+    return [
+      'label' => $label,
+      'value' => $value,
+      'status' => $status,
+      'note' => $note,
     ];
   }
 

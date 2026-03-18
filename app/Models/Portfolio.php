@@ -5,16 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Service extends Model
+class Portfolio extends Model
 {
   use HasFactory;
 
   protected $fillable = [
     'title',
-    'icon_class',
+    'category',
+    'description',
+    'project_url',
     'featured_image',
     'gallery',
-    'content',
     'is_active',
   ];
 

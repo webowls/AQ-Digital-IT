@@ -4,7 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', 'Admin Panel')</title>
+  @php
+  $brandSettings = \App\Models\Setting::whereIn('key', ['app_logo', 'app_favicon', 'app_name'])->pluck('value', 'key');
+  @endphp
+  @if(!empty($brandSettings['app_favicon']))
+  <link rel="icon" href="{{ asset($brandSettings['app_favicon']) }}" sizes="any">
+  @else
+  <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+  @endif
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
@@ -117,7 +126,13 @@
 <body>
   <div class="admin-shell" id="adminShell">
     <aside class="admin-sidebar p-3">
-      <div class="admin-brand mb-3">AQ Admin</div>
+      <div class="admin-brand mb-3">
+        @if(!empty($brandSettings['app_logo']))
+        <img src="{{ asset($brandSettings['app_logo']) }}" alt="{{ $brandSettings['app_name'] ?? 'AQ Admin' }}" style="max-height:36px;max-width:180px;object-fit:contain;filter:brightness(0) invert(1);">
+        @else
+        {{ $brandSettings['app_name'] ?? 'AQ Admin' }}
+        @endif
+      </div>
 
       <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
         <i class="bi bi-speedometer2"></i>
@@ -126,6 +141,14 @@
       <a href="{{ route('admin.services.index') }}" class="sidebar-link {{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
         <i class="bi bi-briefcase"></i>
         <span>Services</span>
+      </a>
+      <a href="{{ route('admin.portfolios.index') }}" class="sidebar-link {{ request()->routeIs('admin.portfolios.*') ? 'active' : '' }}">
+        <i class="bi bi-grid-1x2"></i>
+        <span>Portfolio</span>
+      </a>
+      <a href="{{ route('admin.hero-slides.index') }}" class="sidebar-link {{ request()->routeIs('admin.hero-slides.*') ? 'active' : '' }}">
+        <i class="bi bi-window-fullscreen"></i>
+        <span>Hero Slides</span>
       </a>
       <a href="{{ route('admin.blogs.index') }}" class="sidebar-link {{ request()->routeIs('admin.blogs.*') ? 'active' : '' }}">
         <i class="bi bi-journal-richtext"></i>

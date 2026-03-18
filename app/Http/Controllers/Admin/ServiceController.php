@@ -27,6 +27,7 @@ class ServiceController extends Controller
   {
     $data = $request->validate([
       'title' => ['required', 'string', 'max:255'],
+      'icon_class' => ['nullable', 'string', 'max:100'],
       'content' => ['required', 'string'],
       'is_active' => ['nullable', 'boolean'],
       'featured_image' => ['nullable', 'image', 'max:4096'],
@@ -36,6 +37,7 @@ class ServiceController extends Controller
     $data['featured_image'] = $this->uploadImage($request, 'featured_image');
     $data['gallery'] = $this->uploadGallery($request);
     $data['is_active'] = $request->boolean('is_active');
+    $data['icon_class'] = trim($data['icon_class'] ?? '') ?: 'bi bi-stars';
 
     Service::create($data);
 
@@ -51,6 +53,7 @@ class ServiceController extends Controller
   {
     $data = $request->validate([
       'title' => ['required', 'string', 'max:255'],
+      'icon_class' => ['nullable', 'string', 'max:100'],
       'content' => ['required', 'string'],
       'is_active' => ['nullable', 'boolean'],
       'featured_image' => ['nullable', 'image', 'max:4096'],
@@ -78,6 +81,7 @@ class ServiceController extends Controller
 
     $data['gallery'] = $gallery;
     $data['is_active'] = $request->boolean('is_active');
+    $data['icon_class'] = trim($data['icon_class'] ?? '') ?: 'bi bi-stars';
 
     $service->update($data);
 

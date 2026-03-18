@@ -15,6 +15,9 @@
   <meta property="og:url" content="{{ request()->url() }}">
   <meta property="og:site_name" content="{{ $settings['app_name'] ?? 'AQ Digital' }}">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+  <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('style.css') }}">
@@ -25,7 +28,7 @@
     <div class="container">
       <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
         <span class="brand-logo">AQ</span>
-        <span class="brand-text">{{ $settings['app_name'] ?? 'AQ Digital' }}</span>
+        <span class="brand-text">AQ Digital</span>
       </a>
       <div class="collapse navbar-collapse justify-content-end show">
         <ul class="navbar-nav align-items-center">

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AQ Digital">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4338ca" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)" />
+  <!-- "A" letterform: two angled strokes + crossbar -->
+  <path d="M6 23 L10.5 9.5 H13.5 L18 23 H15.4 L14.2 19.2 H9.8 L8.6 23 Z" fill="white" />
+  <rect x="10.4" y="16.8" width="5.2" height="1.6" rx="0.4" fill="url(#bg)" />
+  <!-- "Q" letterform: circle + tail -->
+  <circle cx="23.5" cy="16.5" r="5" fill="none" stroke="white" stroke-width="2" />
+  <line x1="26.8" y1="20.3" x2="29" y2="23" stroke="white" stroke-width="2.2" stroke-linecap="round" />
+  <!-- Pixel-dot accent (bottom-left, digital feel) -->
+  <rect x="3" y="27" width="2.5" height="2.5" rx="0.5" fill="white" opacity="0.45" />
+  <rect x="6.5" y="27" width="2.5" height="2.5" rx="0.5" fill="white" opacity="0.25" />
+</svg>

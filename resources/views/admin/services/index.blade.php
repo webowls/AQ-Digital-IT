@@ -14,6 +14,7 @@
       <thead>
         <tr>
           <th>Image</th>
+          <th>Icon</th>
           <th>Title</th>
           <th>Status</th>
           <th class="text-end">Actions</th>
@@ -26,6 +27,10 @@
             @if($service->featured_image)
             <img src="{{ asset($service->featured_image) }}" width="70" alt="{{ $service->title }}">
             @endif
+          </td>
+          <td>
+            <i class="{{ $service->icon_class ?: 'bi bi-stars' }}"></i>
+            <small class="text-muted d-block">{{ $service->icon_class ?: 'bi bi-stars' }}</small>
           </td>
           <td>{{ $service->title }}</td>
           <td>
@@ -42,7 +47,7 @@
         </tr>
         @empty
         <tr>
-          <td colspan="4" class="text-center py-4">No services found.</td>
+          <td colspan="5" class="text-center py-4">No services found.</td>
         </tr>
         @endforelse
       </tbody>
